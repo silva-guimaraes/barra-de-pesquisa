@@ -1,13 +1,13 @@
 import nltk
 import glob
+import time
 import math
 import os
 import requests
 import sys
 import json
-# import time
-# import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
+# import matplotlib.pyplot as plt
 
 nltk.download('punkt')
 # ps = nltk.stem.PorterStemmer()
@@ -97,22 +97,33 @@ def read_page(filename):
 
 
 urls = []
+refresh = False
 reverse_index = {}
 websites = []
 last_time = 0
 documents_number = 0
 reverse_index = {}
 
-if os.path.exists('urls.txt'):
-    with open('urls.txt') as file:
-        urls = [line.rstrip('\n') for line in file]
-else:
-    print('urls.txt?', file=sys.stderr)
-    sys.exit(1)
-if not urls:
-    print('urls.txt?', file=sys.stderr)
-    sys.exit(1)
+if len(sys.argv) > 1 and sys.argv[1] == 'refresh':
+    refresh = True
 
+read_from_url_list = not refresh
+
+if read_from_url_list:
+    if os.path.exists('urls.txt'):
+        with open('urls.txt') as file:
+            urls = [line.rstrip('\n') for line in file]
+
+        empty_urls_file = not urls
+
+        if empty_urls_file:
+            print('urls.txt?', file=sys.stderr)
+            sys.exit(1)
+    else:
+        print('urls.txt?', file=sys.stderr)
+        sys.exit(1)
+
+# carregar todos os sites indexados e calcular o indice reverso
 if os.path.exists('index'):
     for filename in glob.glob("index/*"):
         if os.path.isfile(filename):
@@ -139,7 +150,10 @@ inverse_doc_frequency = {}
 for k, v in reverse_index.items():
     inverse_doc_frequency[k] = -(math.log(len(v) / documents_number))
 
-websites = [page for page in websites if page.shouldIndex]
+only_new_url = not refresh
+
+if only_new_url:
+    websites = [page for page in websites if page.shouldIndex]
 
 for page in websites:
     for k, term_freq in page.term_frequency.items():
@@ -149,13 +163,14 @@ if not os.path.exists('index'):
     os.makedirs('index')
 
 for page in websites:
-    print("save", page.url)
+    print("index", page.url)
     formatted_name = '_'.join(page.url.split('/'))
     with open('index/' + formatted_name + '.json', "w") as file:
         file.write(json.dumps(
             {
                 "url": page.url,
-                "tf_idf": page.tf_idf
+                "time": time.time(),
+                "tf_idf": page.tf_idf,
                 }
             ))
 
