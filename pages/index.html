@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <title>barra de pesquisas</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="styles.css" rel="stylesheet">
+    </head>
+    <body class="center">
+        <header class="small-margin">
+            <a href="#">Github</a>
+        </header>
+        <main>
+            <h1>Barra de Pesquisa</h1>
+            <form obsubmit="alert('submit!')">
+            <input id="search-bar" type="text" name="search" oninput="toggleSubmit()" placeholder="O que deseja pesquisar?">
+            <div class="row small-margin">
+                <button id="submit" type="submit">Pesquisar</button>
+                <button type="button">Aleatório</button>
+            </div>
+            </form>
+        </main>
+        <footer>
+            <p>
+            Lorem ipsum dolor sit amet, qui minim labore adipisicing minim sint cillum sint consectetur cupidatat.
+            </p>
+        </footer>
+        <script>
+            var input = document.getElementById('search-bar');
+            input.focus();
+
+            var submit = document.getElementById('submit');
+            function toggleSubmit() {
+                if (input.value == "") {
+                    submit.disabled = true;
+                } else {
+                    submit.disabled = false;
+                }
+            }
+            toggleSubmit();
+        </script>
+    </body>
+</html>
