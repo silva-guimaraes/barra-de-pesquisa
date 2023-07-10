@@ -7,6 +7,7 @@ import requests
 import sys
 import json
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 # import matplotlib.pyplot as plt
 
 nltk.download('punkt')
@@ -113,6 +114,9 @@ if read_from_url_list:
     if os.path.exists('urls.txt'):
         with open('urls.txt') as file:
             urls = [line.rstrip('\n') for line in file]
+            urls = [urlparse(url)._replace(
+                query='', fragment='', params='').geturl() for url in urls]
+            urls = list(set(urls))
 
         empty_urls_file = not urls
 
