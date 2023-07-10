@@ -8,7 +8,6 @@ import sys
 import json
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
-# import matplotlib.pyplot as plt
 
 nltk.download('punkt')
 # ps = nltk.stem.PorterStemmer()
@@ -20,31 +19,6 @@ nltk.download('punkt')
 # recebem valores baixos.
 # https://en.wikipedia.org/wiki/Tf%E2%80%93idf
 # é perfeito pra distinguir uma pagina da outra
-
-
-# def plot_word_frequency(word_frequency):
-#     # Sort the dictionary by values in descending order
-#     sorted_words = sorted(word_frequency.items(), key=lambda x: x[1],
-#                           reverse=True)
-#
-#     # Extract the first 20 words and their frequencies
-#     top_words = dict(sorted_words[:40])
-#
-#     # Prepare data for plotting
-#     words = list(top_words.keys())
-#     frequencies = list(top_words.values())
-#
-#     # Create a bar plot
-#     plt.bar(range(len(words)), frequencies)
-#     plt.xlabel('Words')
-#     plt.ylabel('Frequency')
-#     plt.title('Word Frequency')
-#
-#     # Set the x-axis labels to the words
-#     plt.xticks(range(len(words)), words, rotation=90)
-#
-#     # Display the plot
-#     plt.show()
 
 
 class website():
@@ -94,6 +68,7 @@ def read_page(filename):
         load = json.loads(file.read())
         page = website(load['url'], False)
         page.tf_idf = load['tf_idf']
+        page.term_frequency = load['term_freq']
     return page
 
 
@@ -154,6 +129,7 @@ inverse_doc_frequency = {}
 for k, v in reverse_index.items():
     inverse_doc_frequency[k] = -(math.log(len(v) / documents_number))
 
+
 only_new_url = not refresh
 
 if only_new_url:
@@ -175,8 +151,9 @@ for page in websites:
                 "url": page.url,
                 "time": time.time(),
                 "tf_idf": page.tf_idf,
+                "term_freq": page.term_frequency,
                 }
             ))
 
-with open('urls.txt', 'w') as file:
-    file.write('')
+# with open('urls.txt', 'w') as file:
+#     file.write('')
