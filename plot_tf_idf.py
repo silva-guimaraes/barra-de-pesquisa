@@ -23,6 +23,7 @@ def plot_word_frequency(word_frequency):
 
     # Set the x-axis labels to the words
     plt.xticks(range(len(words)), words, rotation=90)
+    plt.tight_layout()
 
     # Display the plot
     plt.show()
