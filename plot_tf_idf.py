@@ -1,9 +1,12 @@
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 import json
 import sys
 
 
 def plot_word_frequency(word_frequency):
+
+    fprop = fprop = fm.FontProperties(fname='./NotoSansJP-Medium.ttf')
     # Sort the dictionary by values in descending order
     sorted_words = sorted(word_frequency.items(), key=lambda x: x[1],
                           reverse=True)
@@ -22,7 +25,7 @@ def plot_word_frequency(word_frequency):
     plt.title('Word Frequency')
 
     # Set the x-axis labels to the words
-    plt.xticks(range(len(words)), words, rotation=90)
+    plt.xticks(range(len(words)), words, fontproperties=fprop, rotation=90)
     plt.tight_layout()
 
     # Display the plot

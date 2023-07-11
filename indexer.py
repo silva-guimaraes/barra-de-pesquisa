@@ -155,5 +155,5 @@ for page in websites:
                 }
             ))
 
-# with open('urls.txt', 'w') as file:
-#     file.write('')
+with open('urls.txt', 'w') as file:
+    file.write('')

@@ -15,7 +15,7 @@
             <form obsubmit="alert('submit!')">
             <input id="search-bar" type="text" name="search" oninput="toggleSubmit()" placeholder="O que deseja pesquisar?">
             <div class="row small-margin">
-                <button id="submit" type="submit">Pesquisar</button>
+                <button id="submit" type="submit" enabled>Pesquisar</button>
                 <button type="button">Aleatório</button>
             </div>
             </form>
@@ -37,6 +37,7 @@
                     submit.disabled = false;
                 }
             }
+
             toggleSubmit();
         </script>
     </body>
