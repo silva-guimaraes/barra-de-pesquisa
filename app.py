@@ -1,7 +1,55 @@
 import os
+import glob
+import nltk
+import json
 import flask
 
 app = flask.Flask(__name__, template_folder='pages')
+
+
+class website():
+    term_frequency = {}
+    tf_idf = {}
+    url = ""
+    shouldIndex = False
+
+    def __init__(self, url, shouldIndex):
+        self.url = url
+        self.tf_idf = {}
+        self.term_frequency = {}
+
+        self.shouldIndex = shouldIndex
+
+    def __repr__(self):
+        return self.url
+
+
+class candidateWebsite():
+
+    def __init__(self, website):
+        self.website = website
+        self.score = 0
+
+    def __repr__(self):
+        return f'<url: {self.website.url} | score: {self.score}>'
+
+
+def read_page(filename):
+    with open(filename) as file:
+        load = json.loads(file.read())
+        page = website(load['url'], False)
+        page.tf_idf = load['tf_idf']
+        page.term_frequency = load['term_freq']
+    return page
+
+
+def load_websites():
+    websites = []
+    if os.path.exists('index'):
+        for filename in glob.glob("index/*"):
+            if os.path.isfile(filename):
+                websites.append(read_page(filename))
+    return websites
 
 
 @app.route('/')
@@ -12,13 +60,27 @@ def hello():
     if search is None:
         return flask.send_file('pages/index.html')
 
-    files = os.listdir('pages')
-    try:
-        result = files.index(search)
-    except ValueError:
-        return 'no results were found.'
+    search = nltk.word_tokenize(search)
 
-    return flask.render_template('search.html', files=[files[result]])
+    websites = load_websites()
+    candidates = [candidateWebsite(website) for website in websites]
+
+    for candidate in candidates:
+        for word in search:
+            try:
+                candidate.score += candidate.website.tf_idf[word]
+            except KeyError:
+                continue
+
+    candidates = sorted(candidates, reverse=True, key=lambda i: i.score)
+    candidates = [i for i in candidates if i.score > 0]
+
+    print(candidates)
+
+    return flask.render_template(
+            'search.html',
+            files=[i.website.url for i in candidates]
+            )
 
 
 @app.route('/<path:path>')
