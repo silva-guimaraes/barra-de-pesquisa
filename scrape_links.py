@@ -9,7 +9,7 @@ if len(sys.argv) == 1:
     sys.exit(1)
 
 
-def get_anchors(url):
+def get_href(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
     anchors = soup.find_all('a')
@@ -32,12 +32,21 @@ def remove_duplicates(links):
     return list(set(links))
 
 
+def has_double_dot_segments(url):
+    return True if url.find('..') != -1 else False
+
+
 # Example usage
 website_url = sys.argv[1]
 domain = urlparse(website_url).netloc
-anchors = get_anchors(website_url)
 
-links = [complete_link(website_url, link) for link in anchors]
+links = get_href(website_url)
+
+links = [link for link in links if link is not None]
+
+links = [link for link in links if not has_double_dot_segments(link)]
+
+links = [complete_link(website_url, link) for link in links]
 
 links = [trim_url(link) for link in links if same_domain(domain, link)]
 
