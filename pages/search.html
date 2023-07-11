@@ -7,10 +7,13 @@
         <link href="styles.css" rel="stylesheet">
     </head>
     <body>
-        <h1>resultados:</h1>
+        <p>pesquisa por: "{{ terms }}"</p>
+        <h2>resultados:</h2>
         <ul>
-            {% for file in files %}
-            <li>{{ file }}</li>
+            {% for candidate in candidates %}
+            <li>
+                <a href="{{ candidate.website.url }}">{{ candidate.website.url }}</a>
+            </li>
             {% endfor %}
         </ul>
     </body>

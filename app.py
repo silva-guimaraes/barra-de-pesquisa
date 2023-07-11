@@ -29,6 +29,7 @@ class candidateWebsite():
     def __init__(self, website):
         self.website = website
         self.score = 0
+        self.matched_words = {}
 
     def __repr__(self):
         return f'<url: {self.website.url} | score: {self.score}>'
@@ -60,15 +61,17 @@ def hello():
     if search is None:
         return flask.send_file('pages/index.html')
 
-    search = nltk.word_tokenize(search)
+    tokens = nltk.word_tokenize(search)
 
     websites = load_websites()
     candidates = [candidateWebsite(website) for website in websites]
 
     for candidate in candidates:
-        for word in search:
+        for word in tokens:
             try:
-                candidate.score += candidate.website.tf_idf[word]
+                score = candidate.website.tf_idf[word]
+                candidate.score += score
+                candidate.matched_words[word] = score
             except KeyError:
                 continue
 
@@ -79,7 +82,8 @@ def hello():
 
     return flask.render_template(
             'search.html',
-            files=[i.website.url for i in candidates]
+            terms=search,
+            candidates=candidates,
             )
 
 
