@@ -12,7 +12,7 @@
         <ul>
             {% for candidate in candidates %}
             <li>
-                <a href="{{ candidate.website.url }}">{{ candidate.website.url }}</a>
+                <a target="_blank" href="{{ candidate.website.url }}">{{ candidate.website.title }}</a>
             </li>
             {% endfor %}
         </ul>

@@ -10,21 +10,17 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 
 nltk.download('punkt')
-# ps = nltk.stem.PorterStemmer()
+ps = nltk.stem.PorterStemmer()
 
-# atribui valores altos para termos que tenham relevacia para uma pagina
-# porem ao mesmo tempo nao aparecendo com frequencia em outras paginas.
-# termos relevantes sao termos que aparecem com frequencia em uma pagina.
-# termos que aparecem com frequencia em todas as paginas
-# recebem valores baixos.
+# favor ver:
 # https://en.wikipedia.org/wiki/Tf%E2%80%93idf
-# é perfeito pra distinguir uma pagina da outra
 
 
 class website():
     term_frequency = {}
     tf_idf = {}
     url = ""
+    title = ""
     shouldIndex = False
 
     def __init__(self, url, shouldIndex):
@@ -40,7 +36,13 @@ class website():
     def calculate_term_freq(self):
         ret = requests.get(self.url)
 
+        content_type = ret.headers['content-type']
+        if content_type.find('text/html') == -1:
+            raise Exception('if content_type.find(text/html) == -1:')
+
         soup = BeautifulSoup(ret.content, 'html.parser')
+
+        self.title = soup.find('title').getText()
 
         tags = ['p', 'dd', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
         text = soup.findAll(tags)
@@ -48,7 +50,7 @@ class website():
         text = ' '.join(text)
 
         tokens = nltk.word_tokenize(text)
-        # tokens = [ps.stem(i) for i in tokens]
+        tokens = [ps.stem(i) for i in tokens]
 
         count = {}
         for i in tokens:
@@ -69,21 +71,25 @@ def read_page(filename):
         page = website(load['url'], False)
         page.tf_idf = load['tf_idf']
         page.term_frequency = load['term_freq']
+        page.title = load['title']
     return page
 
 
 urls = []
-refresh = False
+recalculate = False
+update = False
 reverse_index = {}
 websites = []
 last_time = 0
 documents_number = 0
 reverse_index = {}
 
-if len(sys.argv) > 1 and sys.argv[1] == 'refresh':
-    refresh = True
+if len(sys.argv) > 1 and sys.argv[1] == 'recalculate':
+    recalculate = True
+elif len(sys.argv) > 1 and sys.argv[1] == 'update':
+    update = True
 
-read_from_url_list = not refresh
+read_from_url_list = not recalculate and not update
 
 if read_from_url_list:
     if os.path.exists('urls.txt'):
@@ -107,30 +113,41 @@ if os.path.exists('index'):
     for filename in glob.glob("index/*"):
         if os.path.isfile(filename):
             websites.append(read_page(filename))
-for page in websites:
-    for k, v in page.term_frequency.items():
-        if k not in reverse_index:
-            reverse_index[k] = []
-        reverse_index[k].append(page.url)
+if not update:
+    for page in websites:
+        for k, v in page.term_frequency.items():
+            if k not in reverse_index:
+                reverse_index[k] = []
+            reverse_index[k].append(page.url)
 
-documents_number = len(urls) + len(websites)
+
+if update:
+    urls += [page.url for page in websites]
+    websites = []
 
 for url in urls:
     print("download", url)
     page = website(url, True)
-    page.calculate_term_freq()
+    try:
+        page.calculate_term_freq()
+    except Exception as e:
+        print(e, file=sys.stderr)
+        urls.remove(url)
+        continue
     websites.append(page)
     for k, v in page.term_frequency.items():
         if k not in reverse_index:
             reverse_index[k] = []
         reverse_index[k].append(url)
 
+documents_number = len(urls) + len(websites)
+
 inverse_doc_frequency = {}
 for k, v in reverse_index.items():
     inverse_doc_frequency[k] = -(math.log(len(v) / documents_number))
 
 
-only_new_url = not refresh
+only_new_url = not recalculate
 
 if only_new_url:
     websites = [page for page in websites if page.shouldIndex]
@@ -149,6 +166,7 @@ for page in websites:
         file.write(json.dumps(
             {
                 "url": page.url,
+                "title": page.title,
                 "time": time.time(),
                 "tf_idf": page.tf_idf,
                 "term_freq": page.term_frequency,

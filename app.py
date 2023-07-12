@@ -1,5 +1,6 @@
 import os
 import glob
+import random
 import nltk
 import json
 import flask
@@ -7,18 +8,23 @@ import flask
 app = flask.Flask(__name__, template_folder='pages')
 
 
+nltk.download('punkt')
+ps = nltk.stem.PorterStemmer()
+
+
 class website():
     term_frequency = {}
     tf_idf = {}
     url = ""
+    title = ""
     shouldIndex = False
 
-    def __init__(self, url, shouldIndex):
-        self.url = url
+    def __init__(self, url, tf_idf, title):
         self.tf_idf = {}
-        self.term_frequency = {}
 
-        self.shouldIndex = shouldIndex
+        self.url = url
+        self.tf_idf = tf_idf
+        self.title = title
 
     def __repr__(self):
         return self.url
@@ -38,10 +44,7 @@ class candidateWebsite():
 def read_page(filename):
     with open(filename) as file:
         load = json.loads(file.read())
-        page = website(load['url'], False)
-        page.tf_idf = load['tf_idf']
-        page.term_frequency = load['term_freq']
-    return page
+        return website(load['url'], load['tf_idf'], load['title'])
 
 
 def load_websites():
@@ -53,6 +56,9 @@ def load_websites():
     return websites
 
 
+websites = load_websites()
+
+
 @app.route('/')
 def hello():
     search = flask.request.args.get('search')
@@ -62,8 +68,8 @@ def hello():
         return flask.send_file('pages/index.html')
 
     tokens = nltk.word_tokenize(search)
+    tokens = [ps.stem(i) for i in tokens]
 
-    websites = load_websites()
     candidates = [candidateWebsite(website) for website in websites]
 
     for candidate in candidates:
@@ -76,9 +82,13 @@ def hello():
                 continue
 
     candidates = sorted(candidates, reverse=True, key=lambda i: i.score)
+    candidates = sorted(candidates, reverse=True,
+                        key=lambda i: len(i.matched_words))
+
     candidates = [i for i in candidates if i.score > 0]
 
-    print(candidates)
+    for i in candidates:
+        i.website.title = i.website.title + json.dumps(i.matched_words)
 
     return flask.render_template(
             'search.html',
@@ -90,3 +100,10 @@ def hello():
 @app.route('/<path:path>')
 def serve_file(path):
     return flask.send_from_directory('pages', path)
+
+
+@app.route('/random')
+def random_page():
+    urls = [page.url for page in websites]
+    random.shuffle(urls)
+    return flask.redirect(urls[0])
