@@ -37,8 +37,12 @@ def has_double_dot_segments(url):
 
 
 # Example usage
+same_domain_only = True
 website_url = sys.argv[1]
 domain = urlparse(website_url).netloc
+
+if len(sys.argv) > 2 and sys.argv[2] == 'external':
+    same_domain_only = False
 
 links = get_href(website_url)
 
@@ -48,7 +52,10 @@ links = [link for link in links if not has_double_dot_segments(link)]
 
 links = [complete_link(website_url, link) for link in links]
 
-links = [trim_url(link) for link in links if same_domain(domain, link)]
+if same_domain_only:
+    links = [trim_url(link) for link in links if same_domain(domain, link)]
+else:
+    links = [trim_url(link) for link in links if not same_domain(domain, link)]
 
 links = remove_duplicates(links)
 

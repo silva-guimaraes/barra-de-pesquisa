@@ -5,16 +5,60 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="styles.css" rel="stylesheet">
+        <style>
+h4 {
+    margin: 10px;
+    text-align: right;
+}
+header {
+    display: flex;
+    justify-content: space-between;
+    position: fixed;
+    z-index: 999;
+    top: 0;
+    /* right: inherit; */
+    /* top: inherit; */
+    /* right: inherit; */
+    background-color: white;
+    /* margin: 0; */
+    width: 100%;
+    border: 3px solid currentColor;
+    border-right: 0;
+    border-left: 0;
+    border-top: 0;
+    /* border: 1px solid #ccc; */
+}
+main {
+    margin: 20px;
+    margin-top: 60px;
+}
+footer {
+    position: static;
+    margin: 0px;
+    height: 60vh;
+}
+code {
+    opacity: 0.6;
+}
+        </style>
     </head>
     <body>
-        <p>pesquisa por: "{{ terms }}"</p>
-        <h2>resultados:</h2>
-        <ul>
-            {% for candidate in candidates %}
-            <li>
-                <a target="_blank" href="{{ candidate.website.url }}">{{ candidate.website.title }}</a>
-            </li>
-            {% endfor %}
-        </ul>
+        <header>
+            <h4>pesquisa por: "{{ terms }}"</h4>
+            <a href="/index.html">
+                <h4>voltar</h4>
+            </a>
+        </header>
+        <main>
+            <h2>resultados:</h2>
+            <ol>
+                {% for candidate in candidates %}
+                <li>
+                    <a target="_blank" href="{{ candidate.website.url }}">{{ candidate.website.title }} <code>({{ candidate.website.url }})</code></a>
+                </li>
+                {% endfor %}
+            </ol>
+        </main>
+        <footer></footer>
     </body>
 </html>

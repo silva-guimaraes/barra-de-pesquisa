@@ -38,7 +38,8 @@ class candidateWebsite():
         self.matched_words = {}
 
     def __repr__(self):
-        return f'<url: {self.website.url} | score: {self.score}>'
+        return f'<url: {self.website.url} | score: {self.score} | \
+matched words: {self.matched_words}>'
 
 
 def read_page(filename):
@@ -87,8 +88,10 @@ def hello():
 
     candidates = [i for i in candidates if i.score > 0]
 
-    for i in candidates:
-        i.website.title = i.website.title + json.dumps(i.matched_words)
+    candidates = candidates[:40]
+
+    # for i in candidates:
+    #     i.website.title = i.website.title + json.dumps(i.matched_words)
 
     return flask.render_template(
             'search.html',
