@@ -3,6 +3,7 @@ import glob
 import random
 import nltk
 import json
+from urllib.parse import urlparse
 import flask
 
 app = flask.Flask(__name__, template_folder='pages')
@@ -108,5 +109,8 @@ def serve_file(path):
 @app.route('/random')
 def random_page():
     urls = [page.url for page in websites]
+    urls = [urlparse(url)._replace(scheme='', path='').geturl()
+            for url in urls]
+    urls = list(set(urls))
     random.shuffle(urls)
     return flask.redirect(urls[0])
