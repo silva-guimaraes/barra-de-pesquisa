@@ -9,6 +9,9 @@ import json
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 
+# downloader = nltk.downloader.Downloader(download_dir='~/.nltk_data/')
+# downloader.download('punkt')
+# criar pastas visiveis no diretório home do usuario é feio
 nltk.download('punkt')
 ps = nltk.stem.PorterStemmer()
 

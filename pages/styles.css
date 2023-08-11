@@ -16,8 +16,31 @@ body, html {
     justify-content: center;
     align-items: center;
     text-align: center;
-    /* background-color: var(--background); */
 }
+main {
+    margin: 20px;
+    margin-top: 60px;
+}
+/* main { */
+/*     display: flex; */
+/*     flex-direction: column; */
+/*     background: white; */
+/*     padding: calc(4 * var(--size-bezel)); */
+/*     margin-top: calc(4 * var(--size-bezel)); */
+/*     border: 3px solid var(--dark, currentColor); */
+/*     box-shadow: .2rem .2rem 0 var(--dark, currentColor); */
+/*     width: 40vw; */
+/* } */
+/* main { */
+/*     display: flex; */
+/*     flex-direction: column; */
+/*     background: white; */
+/*     padding: calc(4 * var(--size-bezel)); */
+/*     margin-top: calc(4 * var(--size-bezel)); */
+/*     border: 3px solid var(--dark, currentColor); */
+/*     box-shadow: .2rem .2rem 0 var(--dark, currentColor); */
+/*     width: 40vw; */
+/* } */
 /* main { */
 /*     display: flex; */
 /*     flex-direction: column; */
@@ -32,20 +55,29 @@ body, html {
 button {
     font-family: 'Inter', sans-serif;
     border: none;
-    border-radius: 5px;
+    border-radius: 3px;
     background-color: var(--dark);
     color: white;
-    padding: 8px 32px;
+    padding: 10px 32px;
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 16px;
+    font-size: 1em;
     margin: 4px 2px;
     cursor: pointer;
+    :hover{
+        background-color: var(--background);
+    }
 }
-
 button:disabled {
     background-color: grey;
+}
+/* button:active{ */
+/*     background-color:red; */
+/* } */
+h4 {
+    margin: 10px;
+    text-align: right;
 }
 footer {
     position: absolute;
@@ -53,9 +85,22 @@ footer {
 
 }
 header {
-    position: absolute;
+    display: flex;
+    justify-content: space-between;
+    position: fixed;
+    z-index: 999;
     top: 0;
-    right: 0;
+    /* right: inherit; */
+    /* top: inherit; */
+    /* right: inherit; */
+    background-color: white;
+    /* margin: 0; */
+    width: 100%;
+    border: 3px solid currentColor;
+    border-right: 0;
+    border-left: 0;
+    border-top: 0;
+    /* border: 1px solid #ccc; */
 }
 a {
     color: var(--dark)

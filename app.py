@@ -32,7 +32,6 @@ class website():
 
 
 class candidateWebsite():
-
     def __init__(self, website):
         self.website = website
         self.score = 0
@@ -61,12 +60,14 @@ def load_websites():
 websites = load_websites()
 
 
+# /index.html não funciona
 @app.route('/')
 def hello():
     search = flask.request.args.get('search')
     print(search)
 
     if search is None:
+        print('index page')
         return flask.send_file('pages/index.html')
 
     tokens = nltk.word_tokenize(search)
@@ -91,8 +92,9 @@ def hello():
 
     candidates = candidates[:40]
 
-    # for i in candidates:
-    #     i.website.title = i.website.title + json.dumps(i.matched_words)
+    # debug
+    for i in candidates:
+        i.website.title = i.website.title + ' ' + json.dumps(i.matched_words)
 
     return flask.render_template(
             'search.html',
@@ -114,3 +116,8 @@ def random_page():
     urls = list(set(urls))
     random.shuffle(urls)
     return flask.redirect(urls[0])
+
+
+@app.errorhandler(404)
+def error():
+    return '404'
