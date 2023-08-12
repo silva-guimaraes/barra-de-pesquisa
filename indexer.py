@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 nltk.download('punkt')
 ps = nltk.stem.PorterStemmer()
 
-# favor ver:
+# toda a idea por trás desse programa:
 # https://en.wikipedia.org/wiki/Tf%E2%80%93idf
 
 
@@ -25,25 +25,27 @@ class website():
     url = ""
     title = ""
     shouldIndex = False
+    request = None
 
-    def __init__(self, url, shouldIndex):
+    def __init__(self, url, new):
         self.url = url
         self.tf_idf = {}
         self.term_frequency = {}
 
-        self.shouldIndex = shouldIndex
+        self.new = new
+
+    def download_page(self):
+        print('download', self.url)
+        self.request = requests.get(self.url)
+
+    def is_html(self):
+        return self.request.headers['content-type'].find('text/html') >= 0
 
     def __repr__(self):
         return self.url
 
     def calculate_term_freq(self):
-        ret = requests.get(self.url)
-
-        content_type = ret.headers['content-type']
-        if content_type.find('text/html') == -1:
-            raise Exception('if content_type.find(text/html) == -1:')
-
-        soup = BeautifulSoup(ret.content, 'html.parser')
+        soup = BeautifulSoup(self.request.content, 'html.parser')
 
         self.title = soup.find('title').getText()
 
@@ -67,6 +69,10 @@ class website():
 
         self.term_frequency = term_frequency
 
+    def calculate_tf_idf(self, inverse_doc_frequency):
+        for k, term_freq in self.term_frequency.items():
+            self.tf_idf[k] = inverse_doc_frequency[k] * term_freq
+
 
 def read_page(filename):
     with open(filename) as file:
@@ -78,91 +84,7 @@ def read_page(filename):
     return page
 
 
-urls = []
-recalculate = False
-update = False
-reverse_index = {}
-websites = []
-last_time = 0
-documents_number = 0
-reverse_index = {}
-
-if len(sys.argv) > 1 and sys.argv[1] == 'recalculate':
-    recalculate = True
-elif len(sys.argv) > 1 and sys.argv[1] == 'update':
-    update = True
-
-read_from_url_list = not recalculate and not update
-
-if read_from_url_list:
-    if os.path.exists('urls.txt'):
-        with open('urls.txt') as file:
-            urls = [line.rstrip('\n') for line in file]
-            urls = [urlparse(url)._replace(
-                query='', fragment='', params='').geturl() for url in urls]
-            urls = list(set(urls))
-
-        empty_urls_file = not urls
-
-        if empty_urls_file:
-            print('urls.txt?', file=sys.stderr)
-            sys.exit(1)
-    else:
-        print('urls.txt?', file=sys.stderr)
-        sys.exit(1)
-
-# carregar todos os sites indexados e calcular o indice reverso
-if os.path.exists('index'):
-    for filename in glob.glob("index/*"):
-        if os.path.isfile(filename):
-            websites.append(read_page(filename))
-if not update:
-    for page in websites:
-        for k, v in page.term_frequency.items():
-            if k not in reverse_index:
-                reverse_index[k] = []
-            reverse_index[k].append(page.url)
-
-
-if update:
-    urls += [page.url for page in websites]
-    websites = []
-
-for url in urls:
-    print("download", url)
-    page = website(url, True)
-    try:
-        page.calculate_term_freq()
-    except Exception as e:
-        print(e, file=sys.stderr)
-        urls.remove(url)
-        continue
-    websites.append(page)
-    for k, v in page.term_frequency.items():
-        if k not in reverse_index:
-            reverse_index[k] = []
-        reverse_index[k].append(url)
-
-documents_number = len(urls) + len(websites)
-
-inverse_doc_frequency = {}
-for k, v in reverse_index.items():
-    inverse_doc_frequency[k] = -(math.log(len(v) / documents_number))
-
-
-only_new_url = not recalculate
-
-if only_new_url:
-    websites = [page for page in websites if page.shouldIndex]
-
-for page in websites:
-    for k, term_freq in page.term_frequency.items():
-        page.tf_idf[k] = inverse_doc_frequency[k] * term_freq
-
-if not os.path.exists('index'):
-    os.makedirs('index')
-
-for page in websites:
+def save_to_index(page):
     print("index", page.url)
     formatted_name = '_'.join(page.url.split('/'))
     with open('index/' + formatted_name + '.json', "w") as file:
@@ -175,6 +97,107 @@ for page in websites:
                 "term_freq": page.term_frequency,
                 }
             ))
+
+
+# aka idf
+def calculate_inverse_doc_frequency(reverse_index):
+    inverse_doc_frequency = {}
+    for k, v in reverse_index.items():
+        inverse_doc_frequency[k] = -(math.log(len(v) / documents_number))
+    return inverse_doc_frequency
+
+
+def load_corpus():
+    corpus = []
+    if os.path.exists('index'):
+        for filename in glob.glob("index/*"):
+            if os.path.isfile(filename):
+                document = read_page(filename)
+                corpus.append(document)
+    return corpus
+
+
+def add_to_reverse_index(reverse_index, page):
+    # cada chave é uma palavra enquanto cada valor
+    # é uma lista com os documentos que possuem aquela palavra
+    # if not update:
+    for k, v in page.term_frequency.items():
+        if k not in reverse_index:
+            reverse_index[k] = []
+        reverse_index[k].append(page.url)
+
+
+def read_new_urls():
+    urls = []
+    if not os.path.exists('urls.txt'):
+        print('urls.txt?', file=sys.stderr)
+        sys.exit(1)
+
+    with open('urls.txt') as file:
+        urls = [line.rstrip('\n') for line in file]
+        urls = [urlparse(url)._replace(
+            query='', fragment='', params='').geturl() for url in urls]
+        urls = list(set(urls))
+
+    empty_urls_file = not urls
+    if empty_urls_file:
+        print('urls.txt?', file=sys.stderr)
+        sys.exit(1)
+    return urls
+
+
+urls = []
+recalculate = False
+update = False
+indexed_corpus = []
+last_time = 0
+documents_number = 0
+reverse_index = {}
+
+if not os.path.exists('index'):
+    os.makedirs('index')
+
+if len(sys.argv) > 1 and sys.argv[1] == 'recalculate':
+    recalculate = True
+elif len(sys.argv) > 1 and sys.argv[1] == 'update':
+    update = True
+
+read_from_url_list = not recalculate and not update
+
+if read_from_url_list:
+    urls = read_new_urls()
+
+# print('load corpus')
+indexed_corpus = load_corpus()
+
+[add_to_reverse_index(reverse_index, i) for i in indexed_corpus]
+
+if update:
+    urls += [page.url for page in indexed_corpus]
+    indexed_corpus = []
+
+new_pages = [website(url, True) for url in urls]
+
+[page.download_page() for page in new_pages]
+
+new_pages = [page for page in new_pages if page.is_html()]
+
+[page.calculate_term_freq() for page in new_pages]
+
+[add_to_reverse_index(reverse_index, i) for i in new_pages]
+
+documents_number = len(new_pages) + len(indexed_corpus)
+
+inverse_doc_frequency = calculate_inverse_doc_frequency(reverse_index)
+
+# only_new_url = not recalculate
+if recalculate:
+    # websites = [page for page in websites if page.new]
+    new_pages += indexed_corpus
+
+[page.calculate_tf_idf(inverse_doc_frequency) for page in new_pages]
+
+[save_to_index(page) for page in new_pages]
 
 with open('urls.txt', 'w') as file:
     file.write('')
