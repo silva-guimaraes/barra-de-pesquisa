@@ -92,9 +92,9 @@ def hello():
 
     candidates = candidates[:40]
 
-    # debug
-    for i in candidates:
-        i.website.title = i.website.title + ' ' + json.dumps(i.matched_words)
+    # # debug
+    # for i in candidates:
+    #     i.website.title = i.website.title + ' ' + json.dumps(i.matched_words)
 
     return flask.render_template(
             'search.html',

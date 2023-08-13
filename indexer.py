@@ -118,9 +118,10 @@ def load_corpus():
 
 
 def add_to_reverse_index(reverse_index, page):
-    # cada chave é uma palavra enquanto cada valor
-    # é uma lista com os documentos que possuem aquela palavra
-    # if not update:
+    # um indice reverso no nosso caso é um hashmap onde cada chave
+    # é contem uma palavra enquanto cada valor de cada chave é uma
+    # lista com os documentos que possuem aquela palavra.
+    # isso agiliza calcular o IDF.
     for k, v in page.term_frequency.items():
         if k not in reverse_index:
             reverse_index[k] = []
@@ -144,6 +145,12 @@ def read_new_urls():
         print('urls.txt?', file=sys.stderr)
         sys.exit(1)
     return urls
+
+
+def remove_duplicates(urls, indexed_corpus):
+    indexed_urls = [i.url for i in indexed_corpus]
+    s = set(indexed_urls)
+    return [i for i in urls if i not in s]
 
 
 urls = []
@@ -172,32 +179,30 @@ indexed_corpus = load_corpus()
 
 [add_to_reverse_index(reverse_index, i) for i in indexed_corpus]
 
+urls = remove_duplicates(urls, indexed_corpus)
+
 if update:
     urls += [page.url for page in indexed_corpus]
     indexed_corpus = []
 
-new_pages = [website(url, True) for url in urls]
+# if recalculate:
+#     urls += [page for page in indexed_corpus]
 
-[page.download_page() for page in new_pages]
+print('urls', len(urls))
+for url in urls:
+    page = website(url, True)
+    page.download_page()
 
-new_pages = [page for page in new_pages if page.is_html()]
+    if not page.is_html():
+        continue
 
-[page.calculate_term_freq() for page in new_pages]
+    page.calculate_term_freq()
+    add_to_reverse_index(reverse_index, page)
+    documents_number = len(urls) + len(indexed_corpus)
 
-[add_to_reverse_index(reverse_index, i) for i in new_pages]
-
-documents_number = len(new_pages) + len(indexed_corpus)
-
-inverse_doc_frequency = calculate_inverse_doc_frequency(reverse_index)
-
-# only_new_url = not recalculate
-if recalculate:
-    # websites = [page for page in websites if page.new]
-    new_pages += indexed_corpus
-
-[page.calculate_tf_idf(inverse_doc_frequency) for page in new_pages]
-
-[save_to_index(page) for page in new_pages]
+    inverse_doc_frequency = calculate_inverse_doc_frequency(reverse_index)
+    page.calculate_tf_idf(inverse_doc_frequency)
+    save_to_index(page)
 
 with open('urls.txt', 'w') as file:
     file.write('')
