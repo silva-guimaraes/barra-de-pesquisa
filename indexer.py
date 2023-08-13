@@ -100,14 +100,15 @@ def save_to_index(page):
 
 
 # aka idf
-def calculate_inverse_doc_frequency(reverse_index):
+def calculate_inverse_doc_frequency(reverse_index, documents_number):
     inverse_doc_frequency = {}
     for k, v in reverse_index.items():
-        inverse_doc_frequency[k] = -(math.log(len(v) / documents_number))
+        inverse_doc_frequency[k] = -math.log(len(v) / documents_number)
     return inverse_doc_frequency
 
 
 def load_corpus():
+    print('loading index...')
     corpus = []
     if os.path.exists('index'):
         for filename in glob.glob("index/*"):
@@ -119,7 +120,7 @@ def load_corpus():
 
 def add_to_reverse_index(reverse_index, page):
     # um indice reverso no nosso caso é um hashmap onde cada chave
-    # é contem uma palavra enquanto cada valor de cada chave é uma
+    # contem uma palavra enquanto cada valor de cada chave é uma
     # lista com os documentos que possuem aquela palavra.
     # isso agiliza calcular o IDF.
     for k, v in page.term_frequency.items():
@@ -153,56 +154,78 @@ def remove_duplicates(urls, indexed_corpus):
     return [i for i in urls if i not in s]
 
 
-urls = []
-recalculate = False
-update = False
-indexed_corpus = []
-last_time = 0
-documents_number = 0
-reverse_index = {}
+def recalculate(indexed_corpus, reverse_index):
+    # todo: assíncrono
+    documents_number = len(indexed_corpus)
 
-if not os.path.exists('index'):
-    os.makedirs('index')
+    for index, page in enumerate(indexed_corpus):
+        print(f'({documents_number-index} left to go) \
+recalculating, {page.url}')
+        inverse_doc_frequency = calculate_inverse_doc_frequency(
+                reverse_index, documents_number
+                )
+        page.calculate_tf_idf(inverse_doc_frequency)
+        save_to_index(page)
 
-if len(sys.argv) > 1 and sys.argv[1] == 'recalculate':
-    recalculate = True
-elif len(sys.argv) > 1 and sys.argv[1] == 'update':
-    update = True
 
-read_from_url_list = not recalculate and not update
-
-if read_from_url_list:
-    urls = read_new_urls()
-
-# print('load corpus')
-indexed_corpus = load_corpus()
-
-[add_to_reverse_index(reverse_index, i) for i in indexed_corpus]
-
-urls = remove_duplicates(urls, indexed_corpus)
-
-if update:
-    urls += [page.url for page in indexed_corpus]
+def main():
+    urls = []
+    isRecalculate = False
+    update = False
     indexed_corpus = []
+    # last_time = 0
+    documents_number = 0
+    reverse_index = {}
 
-# if recalculate:
-#     urls += [page for page in indexed_corpus]
+    if not os.path.exists('index'):
+        os.makedirs('index')
 
-print('urls', len(urls))
-for url in urls:
-    page = website(url, True)
-    page.download_page()
+    if len(sys.argv) > 1 and sys.argv[1] == 'recalculate':
+        isRecalculate = True
+    elif len(sys.argv) > 1 and sys.argv[1] == 'update':
+        update = True
 
-    if not page.is_html():
-        continue
+    read_from_url_list = not isRecalculate and not update
 
-    page.calculate_term_freq()
-    add_to_reverse_index(reverse_index, page)
-    documents_number = len(urls) + len(indexed_corpus)
+    if read_from_url_list:
+        urls = read_new_urls()
 
-    inverse_doc_frequency = calculate_inverse_doc_frequency(reverse_index)
-    page.calculate_tf_idf(inverse_doc_frequency)
-    save_to_index(page)
+    # print('load corpus')
+    indexed_corpus = load_corpus()
 
-with open('urls.txt', 'w') as file:
-    file.write('')
+    [add_to_reverse_index(reverse_index, i) for i in indexed_corpus]
+
+    urls = remove_duplicates(urls, indexed_corpus)
+
+    if update:
+        urls += [page.url for page in indexed_corpus]
+        indexed_corpus = []
+    elif isRecalculate:
+        print('skipping new urls and performing recalculation...')
+        recalculate(indexed_corpus, reverse_index)
+        sys.exit(0)
+
+    print('urls', len(urls))
+    for url in urls:
+        page = website(url, True)
+
+        page.download_page()
+        if not page.is_html():
+            continue
+
+        page.calculate_term_freq()
+        add_to_reverse_index(reverse_index, page)
+        documents_number = len(urls) + len(indexed_corpus)
+
+        inverse_doc_frequency = calculate_inverse_doc_frequency(
+                reverse_index, documents_number
+                )
+        page.calculate_tf_idf(inverse_doc_frequency)
+        save_to_index(page)
+
+    with open('urls.txt', 'w') as file:
+        file.write('')
+
+
+if __name__ == "__main__":
+    main()
